@@ -106,18 +106,24 @@ function math_block(state, start, end, silent){
         max = state.eMarks[start]
 
     if(pos + 2 > max){ return false; }
-    if(state.src.slice(pos,pos+2)!=='$$'){ return false; }
+
+    /** @type {readonly ['$$', '\\['} */
+    const leftDelimiters = ['$$', '\\['];
+    const startDelim = state.src.slice(pos, pos + 2)
+    if(!delimiters.includes(startDelim)){ return false; }
 
     pos += 2;
     firstLine = state.src.slice(pos,max);
 
     if(silent){ return true; }
-    if(firstLine.trim().slice(-2)==='$$'){
+    if(startDelim===leftDelimiters[0] && firstLine.trim().slice(-2)===leftDelimiters[0]){
         // Single line expression
         firstLine = firstLine.trim().slice(0, -2);
         found = true;
     }
 
+    /** @type {readonly ['$$', '\\['} */
+    const rightDelimiters = ['$$', '\\]'];
     for(next = start; !found; ){
 
         next++;
@@ -132,10 +138,12 @@ function math_block(state, start, end, silent){
             break;
         }
 
-        if(state.src.slice(pos,max).trim().slice(-2)==='$$'){
-            lastPos = state.src.slice(0,max).lastIndexOf('$$');
-            lastLine = state.src.slice(pos,lastPos);
-            found = true;
+        for (const delim of rightDelimiters) {
+            if(state.src.slice(pos,max).trim().slice(-2)===delim){
+                lastPos = state.src.slice(0,max).lastIndexOf(delim);
+                lastLine = state.src.slice(pos,lastPos);
+                found = true;
+            }
         }
 
     }
@@ -148,7 +156,7 @@ function math_block(state, start, end, silent){
     + state.getLines(start + 1, next, state.tShift[start], true)
     + (lastLine && lastLine.trim() ? lastLine : '');
     token.map = [ start, state.line ];
-    token.markup = '$$';
+    token.markup = startDelim;
     return true;
 }
 
